@@ -1,4 +1,4 @@
-# 🔗 Snip.ly — Full-Stack MERN URL Shortener
+# Full-Stack MERN URL Shortener
 
 A production-ready, visually stunning URL shortener built with MongoDB, Express, React, and Node.js.
 
