@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>URLShort — Smart URL Shortener</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --acid: #5b7a9c; 
+    --acid-dark: #435b75;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --radius: 24px;
+    --radius-sm: 10px;
+    --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: #ffffff; 
+    color: #141520;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2.5rem;
+    background: #b1bdcc; 
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 1.5rem; font-weight: 800;
+    color: #1a2536;
+    letter-spacing: -0.02em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .logo-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #4b6584; }
+
+  .nav-actions { display: flex; align-items: center; gap: 12px; }
+  .btn-ghost { background: transparent; border: none; color: #ffffff; padding: 0.5rem 1.25rem; font-size: 0.875rem; font-family: var(--font-body); cursor: pointer; transition: var(--transition); }
+  .btn-ghost:hover { opacity: 0.8; }
+  .btn-acid { background: #496382; color: #ffffff; padding: 0.5rem 1.25rem; border: none; border-radius: 100px; font-size: 0.875rem; font-family: var(--font-body); cursor: pointer; transition: var(--transition); }
+  .btn-acid:hover { background: #354961; }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative; z-index: 1;
+    text-align: center;
+    padding: 6rem 2rem 4rem;
+    background: radial-gradient(circle at top, #f0f3f7 0%, #ffffff 70%);
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 4.8rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: #20242f;
+    letter-spacing: -0.03em;
+    margin-bottom: 2rem;
+  }
+
+  .hero p {
+    font-size: 1.05rem;
+    color: #727b8c;
+    max-width: 600px; margin: 0 auto 3.5rem;
+    line-height: 1.6;
+  }
+
+  /* ─── SHORTENER CARD ─── */
+  .shortener-card {
+    position: relative; z-index: 2;
+    max-width: 820px; margin: 0 auto;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.08);
+  }
+
+  .input-row {
+    display: flex; gap: 10px;
+    background: #ffffff;
+    border-bottom: 1px solid #e1e5eb;
+    padding: 8px 4px;
+    align-items: center;
+  }
+
+  .url-input {
+    flex: 1;
+    background: transparent; border: none; outline: none;
+    color: #1a1a1a; font-family: var(--font-body); font-size: 0.95rem;
+    padding: 0.6rem 0.5rem;
+  }
+  .url-input::placeholder { color: #abb4c2; }
+
+  .btn-shorten {
+    background: #5b7a9c; color: #ffffff;
+    border: none; border-radius: 8px;
+    padding: 0.65rem 1.5rem;
+    font-family: var(--font-body); font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; transition: var(--transition);
+    white-space: nowrap;
+  }
+  .btn-shorten:hover { background: var(--acid-dark); }
+  .btn-shorten:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-open {
+    background: #e2e8f0; color: #334155;
+    border: none; border-radius: 8px;
+    padding: 0.65rem 1.25rem;
+    font-family: var(--font-body); font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; transition: var(--transition);
+    white-space: nowrap;
+  }
+  .btn-open:hover { background: #cbd5e1; color: #0f172a; }
+
+  /* ─── RESULT CARD ─── */
+  .result-card {
+    margin-top: 2rem;
+    background: #f0f4f8;
+    border: 1px solid #d0dae6;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+    text-align: left;
+    animation: slideIn 0.4s ease;
+  }
+
+  .result-url { flex: 1; min-width: 0; }
+  .result-label { font-size: 0.7rem; color: #727b8c; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .result-link { font-family: var(--font-body); font-size: 1.1rem; font-weight: 600; color: #2b4666; word-break: break-all; text-decoration: none; }
+
+  .result-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .icon-btn {
+    width: 40px; height: 40px;
+    background: #ffffff; border: 1px solid #ced6e0;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #1a1a1a; transition: var(--transition); font-size: 16px;
+  }
+  .icon-btn:hover { background: #f1f2f6; }
+
+  /* ─── LINK HISTORY SECTION ─── */
+  .history-section {
+    padding: 2rem 4rem 6rem;
+    max-width: 1200px; margin: 0 auto;
+    position: relative; z-index: 1;
+    text-align: left;
+  }
+  .history-section h2 { font-family: var(--font-body); font-size: 1.4rem; font-weight: 700; color: #20242f; margin-bottom: 2rem; }
+  .table-container { width: 100%; overflow-x: auto; }
+  .history-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+  .history-table th { font-size: 0.75rem; color: #9aa4b2; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e4e7ec; font-weight: 600; }
+  .history-table td { padding: 1rem; border-bottom: 1px solid #f2f4f7; font-size: 0.875rem; color: #475467; vertical-align: middle; }
+  .history-table tr:hover td { background: #f9fafb; }
+  .short-link { color: #155eef; font-weight: 500; text-decoration: none; }
+  .short-link:hover { text-decoration: underline; }
+  .orig-link { color: #667085; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  .click-badge { background: #f2f4f7; color: #344054; font-size: 0.75rem; padding: 4px 10px; border-radius: 100px; font-weight: 500; }
+  
+  .copy-inline, .del-btn { background: none; border: none; color: #98a2b3; cursor: pointer; padding: 6px; border-radius: 6px; transition: var(--transition); font-size: 14px; }
+  .copy-inline:hover { color: #155eef; background: #f0f5ff; }
+  .del-btn:hover { color: #d92d20; background: #fff1f0; }
+
+  /* ─── AUTH MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+  }
+  .modal {
+    background: #ffffff; border: 1px solid #e4e7ec;
+    border-radius: 16px; padding: 2.5rem;
+    width: 100%; max-width: 400px;
+    position: relative;
+    text-align: left;
+    box-shadow: 0 20px 24px -4px rgba(16, 24, 40, 0.1);
+  }
+  .modal h2 { font-size: 1.5rem; font-weight: 700; color: #101828; margin-bottom: 0.5rem; }
+  .modal p { color: #667085; font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .form-field { margin-bottom: 1.25rem; }
+  .form-label { display: block; font-size: 0.85rem; color: #344054; font-weight: 500; margin-bottom: 6px; }
+  .form-input {
+    width: 100%; padding: 0.65rem 0.8rem;
+    border: 1px solid #d0d5dd; border-radius: 8px; font-size: 0.95rem; outline: none;
+  }
+  .form-input:focus { border-color: #5b7a9c; }
+  .btn-submit {
+    width: 100%; padding: 0.75rem; background: #5b7a9c; color: white;
+    border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  }
+  .btn-submit:hover { background: var(--acid-dark); }
+  .modal-switch { text-align: center; margin-top: 1.25rem; font-size: 0.85rem; color: #667085; }
+  .modal-switch button { background: none; border: none; color: #155eef; cursor: pointer; font-weight: 600; }
+  .close-btn { position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; color: #98a2b3; cursor: pointer; font-size: 16px; }
+
+  /* ─── TOAST ─── */
+  #toastContainer { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+  .toast { background: #ffffff; border: 1px solid #e4e7ec; border-left: 4px solid #5b7a9c; border-radius: 8px; padding: 0.85rem 1.25rem; font-size: 0.9rem; color: #344054; box-shadow: 0 10px 15px -3px rgba(16, 24, 40, 0.1); animation: slideIn 0.3s ease; }
+  .toast.error { border-left-color: #d92d20; }
+
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+
+  @keyframes slideIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    .hero { padding: 4rem 1.5rem 3rem; }
+    .shortener-card { padding: 1.5rem; }
+    .history-section { padding: 2rem 1.5rem; }
+    .input-row { flex-wrap: wrap; }
+    .url-input { min-width: 100%; border-bottom: 1px solid #e1e5eb; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="mainNav">
+  <div class="logo"><span class="logo-dot"></span>URLShort</div>
+  <div class="nav-actions" id="navActions">
+    <button class="btn-ghost" onclick="openModal('login')">Log in</button>
+    <button class="btn-acid" onclick="openModal('register')">Get started free</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <h1>Long URL Conversion to<br/>a shorter URL</h1>
+  <p>Shorten, track, and manage your links with real-time analytics, custom aliases, and QR codes — all in one place.</p>
+
+  <div class="shortener-card">
+    <div class="input-row">
+      <input
+        type="text"
+        class="url-input"
+        id="urlInput"
+        placeholder="Paste your long URL here... https://example.com/very/long/path"
+        autocomplete="off"
+      />
+      <button class="btn-open" onclick="handleDirectOpen()">
+        Open Link
+      </button>
+      <button class="btn-shorten" id="shortenBtn" onclick="handleShorten()">
+        Shorten
+      </button>
+    </div>
+
+    <div id="resultArea"></div>
+  </div>
+</section>
+
+<section class="history-section" id="recentLinksSection">
+  <h2>Recent links</h2>
+  <div class="table-container">
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Short Link</th>
+          <th>Original URL</th>
+          <th>Title</th>
+          <th>Clicks</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="historyBody">
+        </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="modal-overlay" id="authModal" style="display:none" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+// ─── STATE MANAGEMENT ───
+let currentUser = JSON.parse(localStorage.getItem('urlshort_user') || 'null');
+const API_BASE_URL = 'http://localhost:5000/api'; 
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateNav();
+  fetchRecentLinks();
+  document.getElementById('urlInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleShorten();
+  });
+});
+
+function updateNav() {
+  const actions = document.getElementById('navActions');
+  if (currentUser && currentUser.data?.user) {
+    actions.innerHTML = `
+      <div style="font-size:0.9rem; color:#475467; font-weight:500; cursor:pointer;" onclick="handleLogout()">
+        Sign Out (${currentUser.data.user.name.split(' ')[0]}) ↗
+      </div>
+    `;
+  } else {
+    actions.innerHTML = `
+      <button class="btn-ghost" onclick="openModal('login')">Log in</button>
+      <button class="btn-acid" onclick="openModal('register')">Get started free</button>
+    `;
+  }
+}
+
+// ─── DIRECT OPEN FUNCTIONALITY ───
+function handleDirectOpen() {
+  const urlInput = document.getElementById('urlInput');
+  let targetUrl = urlInput.value.trim();
+
+  if (!targetUrl) {
+    showToast('Please paste or type a URL link first.', 'error');
+    return;
+  }
+  if (!/^https?:\/\//i.test(targetUrl)) {
+    targetUrl = 'https://' + targetUrl;
+  }
+  showToast('Opening link target destination...');
+  window.open(targetUrl, '_blank');
+}
+
+// ─── LIVE BACKEND SHORTEN ACTION ───
+async function handleShorten() {
+  const urlInput = document.getElementById('urlInput');
+  const shortenBtn = document.getElementById('shortenBtn');
+  const originalUrl = urlInput.value.trim();
+
+  if (!originalUrl) {
+    showToast('Please insert a valid web URL link address.', 'error');
+    return;
+  }
+
+  shortenBtn.disabled = true;
+  shortenBtn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/url/shorten`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': currentUser?.data?.token ? `Bearer ${currentUser.data.token}` : ''
+      },
+      body: JSON.stringify({ originalUrl })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to shorten URL');
+    }
+
+    const shortUrl = result.data.shortUrl; 
+    const qrCodeSrc = result.data.qrCode;
+
+    const resultArea = document.getElementById('resultArea');
+    resultArea.innerHTML = `
+      <div class="result-card" style="flex-wrap: wrap; gap: 1.5rem;">
+        <div class="result-url" style="flex: 1; min-width: 250px;">
+          <div class="result-label">Short URL Created</div>
+          <a href="${shortUrl}" target="_blank" class="result-link">${shortUrl}</a>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <img src="${qrCodeSrc}" alt="QR Code" style="width: 70px; height: 70px; border: 1px solid #ced6e0; border-radius: 6px;" />
+          <div class="result-actions">
+            <button class="icon-btn" onclick="copyToClipboard('${shortUrl}', this)">📋</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    urlInput.value = '';
+    showToast('Link shortened successfully!');
+    fetchRecentLinks(); 
+
+  } catch (error) {
+    showToast(error.message, 'error');
+    console.error(error);
+  } finally {
+    shortenBtn.disabled = false;
+    shortenBtn.innerHTML = 'Shorten';
+  }
+}
+
+// ─── FETCH FROM MONGODB API ───
+async function fetchRecentLinks() {
+  const tbody = document.getElementById('historyBody');
+  
+  if (!currentUser || !currentUser.data?.token) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#9aa4b2; padding:2rem;">Log in to store and manage your personal links in history logs.</td></tr>`;
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/url/my-urls`, {
+      headers: {
+        'Authorization': `Bearer ${currentUser.data.token}`
+      }
+    });
+    
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    
+    const links = result.data;
+
+    if (!links || links.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#9aa4b2; padding:2rem;">No URLs found in your account.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = links.map((link) => `
+      <tr>
+        <td><a href="${link.shortUrl}" target="_blank" class="short-link">${link.shortUrl}</a></td>
+        <td><span class="orig-link" title="${link.originalUrl}">${link.originalUrl}</span></td>
+        <td>${link.title || '—'}</td>
+        <td><span class="click-badge">${link.clickCount || 0}</span></td>
+        <td>
+          <button class="copy-inline" onclick="copyToClipboard('${link.shortUrl}', this)" title="Copy Link">📋</button>
+          <button class="del-btn" onclick="deleteLink('${link._id}')" title="Delete">🗑️</button>
+        </td>
+      </tr>
+    `).join('');
+
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#d92d20; padding:2rem;">Failed to load history items.</td></tr>`;
+  }
+}
+
+// ─── LIVE BACKEND SHORTEN ACTION (NO QR CODE + DIRECT ACTIONS) ───
+async function handleShorten() {
+  const urlInput = document.getElementById('urlInput');
+  const shortenBtn = document.getElementById('shortenBtn');
+  const originalUrl = urlInput.value.trim();
+
+  if (!originalUrl) {
+    showToast('Please insert a valid web URL link address.', 'error');
+    return;
+  }
+
+  shortenBtn.disabled = true;
+  shortenBtn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/url/shorten`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': currentUser?.data?.token ? `Bearer ${currentUser.data.token}` : ''
+      },
+      body: JSON.stringify({ originalUrl })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to shorten URL');
+    }
+
+    const shortUrl = result.data.shortUrl; 
+
+    // Rendered with direct click actions, completely removing the QR code image
+    const resultArea = document.getElementById('resultArea');
+    resultArea.innerHTML = `
+      <div class="result-card" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+        <div class="result-url" style="flex: 1; min-width: 0;">
+          <div class="result-label">Short URL Created</div>
+          <a href="${shortUrl}" target="_blank" class="result-link" id="createdShortLink">${shortUrl}</a>
+        </div>
+        <div class="result-actions" style="display: flex; gap: 8px; flex-shrink: 0;">
+          <button class="btn-open" onclick="window.open('${shortUrl}', '_blank')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+            Open Link ↗
+          </button>
+          <button class="icon-btn" onclick="copyToClipboard('${shortUrl}', this)" style="width: 40px; height: 40px;">
+            📋
+          </button>
+        </div>
+      </div>
+    `;
+
+    urlInput.value = '';
+    showToast('Link shortened successfully!');
+    fetchRecentLinks(); 
+
+  } catch (error) {
+    showToast(error.message, 'error');
+    console.error(error);
+  } finally {
+    shortenBtn.disabled = false;
+    shortenBtn.innerHTML = 'Shorten';
+  }
+}
+
+// ─── CONNECTED AUTHENTICATION LOGIC ───
+function openModal(type) {
+  const modal = document.getElementById('authModal');
+  const content = document.getElementById('modalContent');
+  modal.style.display = 'flex';
+
+  if (type === 'login') {
+    content.innerHTML = `
+      <h2>Welcome Back</h2>
+      <p>Log into your shortener portal dashboard account.</p>
+      <div class="form-field">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" id="authEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="authPassword" placeholder="******"/>
+      </div>
+      <button class="btn-submit" onclick="submitAuth('login')">Log In</button>
+      <div class="modal-switch">New here? <button onclick="openModal('register')">Create an account</button></div>
+    `;
+  } else {
+    content.innerHTML = `
+      <h2>Get Started</h2>
+      <p>Sign up to track metrics and hold custom domain logs.</p>
+      <div class="form-field">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="authName" placeholder="Developer Name"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" id="authEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Secure Password</label>
+        <input type="password" class="form-input" id="authPassword" placeholder="Min. 6 characters"/>
+      </div>
+      <button class="btn-submit" onclick="submitAuth('register')">Sign Up</button>
+      <div class="modal-switch">Already registered? <button onclick="openModal('login')">Log in</button></div>
+    `;
+  }
+}
+
+function closeModal() { document.getElementById('authModal').style.display = 'none'; }
+function handleOverlayClick(e) { if (e.target.id === 'authModal') closeModal(); }
+
+async function submitAuth(endpoint) {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const nameInput = document.getElementById('authName');
+  const name = nameInput ? nameInput.value.trim() : undefined;
+
+  if (!email || !password) { showToast('Please fill out all login fields.', 'error'); return; }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name })
+    });
+    const result = await response.json();
+
+    if (!response.ok) throw new Error(result.error || 'Authentication failed');
+
+    currentUser = result; 
+    localStorage.setItem('urlshort_user', JSON.stringify(currentUser));
+    updateNav();
+    closeModal();
+    showToast(`Successfully logged in!`);
+    fetchRecentLinks();
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+function handleLogout() {
+  currentUser = null;
+  localStorage.removeItem('urlshort_user');
+  updateNav();
+  showToast('Logged out.');
+  fetchRecentLinks();
+}
+
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  if(!container) return;
+  const element = document.createElement('div');
+  element.className = `toast ${type}`;
+  element.innerText = msg;
+  container.appendChild(element);
+  setTimeout(() => element.remove(), 3500);
+}
+</script>
